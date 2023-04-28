@@ -38,3 +38,8 @@ jobs:
         run: go version
       - name: tests
         run: make tests
+      - name: check test coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          # Configure action using config file (option 1)
+          config: ./.testcoverage.yml
