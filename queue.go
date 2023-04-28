@@ -2,7 +2,6 @@ package fqueue
 
 import (
 	"errors"
-	"fmt"
 )
 
 var (
@@ -34,35 +33,14 @@ type Queuer[T any] interface {
 	Size() int
 }
 
-type QueuingKind uint
-
-const (
-	Unknown QueuingKind = iota
-	Basic
-)
-
-func (q QueuingKind) String() string {
-	switch q {
-	case Basic:
-		return "BasicQueue"
-	default:
-		return fmt.Sprintf("Invalid Queue type: %d", q)
-	}
-}
-
 type queue[T any] struct {
 	q Queuer[T]
 }
 
-func newQueue[T any](size int, kind QueuingKind) *queue[T] {
-	switch kind {
-	case Basic:
-		return &queue[T]{
-			q: NewBasicQueue[T](size),
-		}
+func newQueue[T any](q Queuer[T]) *queue[T] {
+	return &queue[T]{
+		q: q,
 	}
-
-	return nil
 }
 
 func (q *queue[T]) Add(e ...T) (bool, error) { return q.q.Add(e...) }

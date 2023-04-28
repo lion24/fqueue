@@ -2,7 +2,6 @@ package fqueue
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,32 +12,34 @@ type queueTests struct {
 	fun  func(q Queuer[int], t *testing.T)
 }
 
+func flushQueue(queue Queuer[int]) {
+	for i := queue.Len(); i > 0; i-- { // Flush element from the queue
+		_, _ = queue.Remove()
+	}
+}
+
 func TestQueues(t *testing.T) {
 	cases := []struct {
-		queueKind QueuingKind
-		queueSize int
-		testslist []queueTests
+		name  string
+		queue Queuer[int]
 	}{
-		{
-			queueKind: Basic,
-			queueSize: 8,
-			testslist: []queueTests{
-				{name: "Add", fun: testAdd},
-				{name: "Remove", fun: testRemove},
-				{name: "Len", fun: testLen},
-				{name: "QueueFull", fun: testQueueFull},
-			},
-		},
+		{name: "BasicQueue", queue: NewBasicQueue[int](8)},
 	}
 
 	for _, tc := range cases {
 		tc := tc // pin
-		testName := fmt.Sprint(tc.queueKind)
 
-		t.Run(testName, func(t *testing.T) {
-			for _, test := range tc.testslist {
-				queue := newQueue[int](tc.queueSize, tc.queueKind)
+		queue := newQueue[int](tc.queue)
 
+		testslist := []queueTests{
+			{name: "Add", fun: testAdd},
+			{name: "Remove", fun: testRemove},
+			{name: "Len", fun: testLen},
+			{name: "QueueFull", fun: testQueueFull},
+		}
+
+		t.Run(tc.name, func(t *testing.T) {
+			for _, test := range testslist {
 				t.Run(test.name, func(t *testing.T) {
 					test.fun(queue, t)
 				})
@@ -48,6 +49,8 @@ func TestQueues(t *testing.T) {
 }
 
 func testRemove(queue Queuer[int], t *testing.T) {
+	defer flushQueue(queue)
+
 	var (
 		ok   bool
 		elem int
@@ -88,6 +91,8 @@ func testRemove(queue Queuer[int], t *testing.T) {
 }
 
 func testAdd(queue Queuer[int], t *testing.T) {
+	defer flushQueue(queue)
+
 	var (
 		elem int
 		err  error
@@ -161,6 +166,8 @@ func testAdd(queue Queuer[int], t *testing.T) {
 }
 
 func testLen(queue Queuer[int], t *testing.T) {
+	defer flushQueue(queue)
+
 	var (
 		ok  bool
 		err error
@@ -215,12 +222,14 @@ func testLen(queue Queuer[int], t *testing.T) {
 }
 
 func testQueueFull(queue Queuer[int], t *testing.T) {
+	defer flushQueue(queue)
+
 	var (
 		err error
 		ok  bool
 	)
 
-	for i := 0; i < queue.Size(); i++ {
+	for i := 0; i < queue.Size() && queue.Size() != int(queue.Len()); i++ {
 		// Fill the queue
 		ok, err = queue.Add(i)
 		assert.NoError(t, err)
