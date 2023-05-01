@@ -24,12 +24,13 @@ func TestQueues(t *testing.T) {
 		queue Queuer[int]
 	}{
 		{name: "BasicQueue", queue: NewBasicQueue[int](8)},
+		{name: "LinkedQueue", queue: NewLinkedQueue[int](8)},
 	}
 
 	for _, tc := range cases {
 		tc := tc // pin
 
-		queue := newQueue[int](tc.queue)
+		queue := newQueue(tc.queue)
 
 		testslist := []queueTests{
 			{name: "Add", fun: testAdd},
