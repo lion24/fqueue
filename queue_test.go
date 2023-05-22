@@ -2,6 +2,8 @@ package fqueue
 
 import (
 	"errors"
+	"math/rand"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +13,8 @@ type queueTests struct {
 	name string
 	fun  func(q Queuer[int], t *testing.T)
 }
+
+var dummy any
 
 func flushQueue(queue Queuer[int]) {
 	for i := queue.Len(); i > 0; i-- { // Flush element from the queue
@@ -53,41 +57,40 @@ func testRemove(queue Queuer[int], t *testing.T) {
 	defer flushQueue(queue)
 
 	var (
-		ok   bool
-		elem int
-		err  error
+		ok  bool
+		err error
 	)
 
 	ok, err = queue.Add(1, 1, 2, 3, 5, 8)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 1, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 1, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 1, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 1, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 2, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 2, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 3, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 3, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 5, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 5, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 8, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 8, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Empty(t, elem)
+	dummy, err = queue.Remove()
+	assert.Empty(t, dummy)
 	assert.Error(t, err, "Expected error when dequeuing from an empty queue")
 }
 
@@ -95,9 +98,8 @@ func testAdd(queue Queuer[int], t *testing.T) {
 	defer flushQueue(queue)
 
 	var (
-		elem int
-		err  error
-		ok   bool
+		err error
+		ok  bool
 	)
 
 	ok, err = queue.Add(1)
@@ -113,16 +115,16 @@ func testAdd(queue Queuer[int], t *testing.T) {
 	assert.True(t, ok)
 
 	// Dequeue some elements
-	elem, err = queue.Remove()
-	assert.Equal(t, 1, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 1, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 1, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 1, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 2, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 2, dummy)
 	assert.NoError(t, err)
 
 	// Enqueue some more elements
@@ -141,24 +143,24 @@ func testAdd(queue Queuer[int], t *testing.T) {
 
 	// Remove remaining elements previously added
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 3, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 3, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 5, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 5, dummy)
 	assert.NoError(t, err)
 
-	elem, err = queue.Remove()
-	assert.Equal(t, 8, elem)
+	dummy, err = queue.Remove()
+	assert.Equal(t, 8, dummy)
 	assert.NoError(t, err)
 
 	// Assert queue is empty
 
 	expectErr := ErrQueueIsEmpty
 
-	elem, err = queue.Remove()
-	assert.Empty(t, elem)
+	dummy, err = queue.Remove()
+	assert.Empty(t, dummy)
 	assert.Error(t, err, "Expected error when dequeuing from an empty queue")
 
 	if !errors.Is(err, expectErr) {
@@ -272,4 +274,76 @@ func testQueueFull(queue Queuer[int], t *testing.T) {
 	ok, err = queue.Add(32)
 	assert.NoError(t, err)
 	assert.True(t, ok)
+}
+
+func BenchmarkBasicQueueAdd(b *testing.B) {
+	queue := NewBasicQueue[uint64](b.N)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+}
+
+func BenchmarkLinkedQueueAdd(b *testing.B) {
+	queue := NewLinkedQueue[uint64](b.N)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+}
+
+func BenchmarkBasicQueueRemove(b *testing.B) {
+	queue := NewBasicQueue[uint64](b.N)
+
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Remove()
+	}
+}
+
+func BenchmarkLinkedQueueRemove(b *testing.B) {
+	queue := NewLinkedQueue[uint64](b.N)
+
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Remove()
+	}
+}
+
+func BenchmarkBasicQueueEnqueueDequeue(b *testing.B) {
+	queue := NewBasicQueue[uint64](b.N)
+	runtime.GC()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Remove()
+	}
+}
+
+func BenchmarkLinkedQueueEnqueuDeque(b *testing.B) {
+	queue := NewLinkedQueue[uint64](b.N)
+	runtime.GC()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Add(rand.Uint64()) //nolint: gosec
+	}
+
+	for i := 0; i < b.N; i++ {
+		dummy, _ = queue.Remove()
+	}
 }
