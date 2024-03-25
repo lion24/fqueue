@@ -45,7 +45,7 @@ jobs:
           # Configure action using config file (option 1)
           config: ./.testcoverage.yml
       - name: make coverage badge
-        uses: action-badges/core@0.2.2
+        uses: action-badges/core@0.3.1
         if: contains(github.ref, 'main')
         with:
           label: coverage
