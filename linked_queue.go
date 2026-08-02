@@ -41,7 +41,7 @@ func (q *LinkedQueue[T]) Add(e ...T) (bool, error) {
 
 			if tail == load[T](&q.tail) {
 				if next == nil { // Tail was point to last node?
-					if q.Len() == uint64(q.size) {
+					if q.Size() > 0 && q.Len() == uint64(q.Size()) {
 						return false, ErrQueueIsFull
 					}
 
